@@ -4,7 +4,7 @@ Tailscale Log Collector
 Collects Tailscale logs and formats them for Wazuh ingestion.
 Output: Compact JSON (NDJSON) suitable for Wazuh Agent.
 """
-
+ 
 import json
 import subprocess
 import datetime
