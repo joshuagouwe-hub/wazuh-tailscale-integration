@@ -1,14 +1,14 @@
-name: Collect Tailscale Logs
+name: Collect Tailscale Logs & Send to Wazuh
 
 on:
   schedule:
     # Run every hour at minute 0
     - cron: '0 * * * *'
-  workflow_dispatch:  # Allows manual triggering
+  workflow_dispatch:
 
 permissions:
-  contents: write
-  
+  contents: read
+
 jobs:
   collect-logs:
     runs-on: ubuntu-latest
@@ -16,8 +16,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -37,21 +35,15 @@ jobs:
           sleep 10
           tailscale status
       
-      - name: Create logs directory
-        run: mkdir -p logs
-      
-      - name: Run log collector
-        run: python3 scripts/collect_tailscale_logs.py logs/
-      
-      - name: Commit and push logs
-        run: |
-          git config --global user.name 'Tailscale Log Bot'
-          git config --global user.email 'bot@github-actions.local'
-          git add logs/
-          git commit -m "Add Tailscale logs - $(date -u +'%Y-%m-%d %H:%M:%S UTC')" || echo "No changes to commit"
-          git push
+      - name: Collect and Send Logs to Wazuh
+        env:
+          WAZUH_API_URL: ${{ secrets.WAZUH_API_URL }}
+          WAZUH_API_USER: ${{ secrets.WAZUH_API_USER }}
+          WAZUH_API_PASSWORD: ${{ secrets.WAZUH_API_PASSWORD }}
+          WAZUH_AGENT_ID: ${{ secrets.WAZUH_AGENT_ID }}
+        run: python3 scripts/send_to_wazuh.py
       
       - name: Summary
         if: success()
         run: |
-          echo "✅ Logs collected successfully"
+          echo "✅ Logs collected and sent to Wazuh successfully"
